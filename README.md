@@ -9,9 +9,14 @@ Configure it via NRPE and execute at will. For initial testing manual execution 
 There are 2 internal applications supported:
 
  * check-ebs - checks status for all attached EBS volumes.
- * check-snapshots - checks that the attached EBS volumes have at least a certain number of snapshots and that those snapshots are healthy. Warning and critical levels are configurable via the `--warning|-w` and `--critical|-c` options respectively. Due to the usage of `symfony/console` the options are completely optional, but have fallback values of `14` and `7` respectively.
+ * check-snapshots - checks that the attached EBS volumes have at least a certain number of snapshots in the last 15 days and that those snapshots are healthy. Warning and critical levels are configurable via the `--warning|-w` and `--critical|-c` options respectively. Due to the usage of `symfony/console` the options are completely optional, but have fallback values of `14` and `7` respectively.
 
 Help is available via the --help option.
+
+## Hacking/Contributing
+Patches, improvements, suggestions, pull requests are welcome.
+
+The code is relatively straight forward (albeit a bit duplicated) and shouldn't be hard on the eyes.
 
 ## Example
 Example of a normal check
