@@ -106,6 +106,7 @@ class CheckEBSSnapshots extends Console\Command\Command {
 		$this->setName('check-snapshots');
 		$this->addOption('warning', 'w', InputOption::VALUE_REQUIRED, 'Warning level', 14);
 		$this->addOption('critical', 'c', InputOption::VALUE_REQUIRED, 'Critical level', 7);
+		$this->addOption('period', 'p', InputOption::VALUE_REQUIRED, 'How many days back to check the snapshots', 14);
 	}
 
 	protected function execute(Console\Input\InputInterface $input, Console\Output\OutputInterface $output){
@@ -142,7 +143,7 @@ class CheckEBSSnapshots extends Console\Command\Command {
 
 			unset($dates);
 			# create an array to filter snapshots
-			for ($i=0 ; $i <= 14 ; $i++){
+			for ($i=0 ; $i <= $input->getOption('period') ; $i++){
 				$dates[]=date('Y-m-d', strtotime("-$i days")) . '*';
 			}
 
