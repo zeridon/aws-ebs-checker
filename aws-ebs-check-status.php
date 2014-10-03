@@ -7,7 +7,6 @@ $BASEDIR=dirname(__FILE__);
 
 require($BASEDIR . '/vendor/autoload.php');
 
-
 use Symfony\Component\Console;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -21,6 +20,12 @@ define('STATE_WARNING', 1);
 define('STATE_CRITICAL', 2);
 define('STATE_UNKNOWN', 3);
 
+# global AWS config
+$config = array(
+#	'key' => 'YOUR_AWS_ACCESS_KEY_ID',
+#	'secret' => 'YOUR_AWS_SECRET_ACCESS_KEY',
+);
+
 class CheckEBSStatus extends Console\Command\Command {
 
 	protected function configure(){
@@ -30,6 +35,9 @@ class CheckEBSStatus extends Console\Command\Command {
 	}
 
 	protected function execute(Console\Input\InputInterface $input, Console\Output\OutputInterface $output){
+		# Pull the global config
+		global $config;
+
 		# get location info
 		$sInstanceID = file_get_contents('http://169.254.169.254/latest/meta-data/instance-id');
 		$sAZ = file_get_contents('http://169.254.169.254/latest/meta-data/placement/availability-zone');
@@ -41,9 +49,7 @@ class CheckEBSStatus extends Console\Command\Command {
 		$_ret_flag_warn=FALSE;
 		$_ret_flag_unkn=FALSE;
 
-		$config = array(
-			'region' => $sRegion,
-		);
+		$config['region']=$sRegion;
 
 		# connect to AWS
 		$aws = Aws::factory($config);
@@ -103,6 +109,9 @@ class CheckEBSSnapshots extends Console\Command\Command {
 	}
 
 	protected function execute(Console\Input\InputInterface $input, Console\Output\OutputInterface $output){
+		# Pull the global config
+		global $config;
+
 		# get location info
 		$sInstanceID = file_get_contents('http://169.254.169.254/latest/meta-data/instance-id');
 		$sAZ = file_get_contents('http://169.254.169.254/latest/meta-data/placement/availability-zone');
@@ -114,9 +123,7 @@ class CheckEBSSnapshots extends Console\Command\Command {
 		$_ret_flag_warn=FALSE;
 		$_ret_flag_unkn=FALSE;
 
-		$config = array(
-			'region' => $sRegion,
-		);
+		$config['region']=$sRegion;
 
 		# connect to AWS
 		$aws = Aws::factory($config);

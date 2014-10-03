@@ -4,7 +4,7 @@
 This is a nagios based check that can be used to check status of attached EBS volumes and their snapshots.
 
 ## How to use
-Configure it via NRPE and execute at will. For initial testing manual execution is advised.
+Configure it via NRPE and execute at will. For initial testing manual execution is advised. In order to use it you must enter your credentials in the global `$config` array or make sure the appropriate environment values are specified and available. More information can be found in [Providing Credentials to the SDK](http://docs.aws.amazon.com/aws-sdk-php/guide/latest/credentials.html) Amazon documentation.
 
 There are 2 internal applications supported:
 
