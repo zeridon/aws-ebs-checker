@@ -31,6 +31,7 @@ class CheckEBSStatus extends Console\Command\Command {
 	protected function configure(){
 		$this->setDescription('Checks EBS status');
 		$this->setHelp('Checks the EBS status for all attached volumes and report to nagios');
+		$this->addOption('ignore', 'i', InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED, 'Ignore this volume', null);
 		$this->setName('check-ebs');
 	}
 
@@ -65,26 +66,35 @@ class CheckEBSStatus extends Console\Command\Command {
 		# Now iterate over the volumes checking status
 		$_volumes = $result['Volumes'];
 		foreach($_volumes as $vol){
-			$result = $client->describeVolumeStatus(array('VolumeIds' => array($vol['VolumeId'])));
-			$_volstat = $result['VolumeStatuses'];
-			foreach($_volstat as $vstat){
-				switch ($vstat['VolumeStatus']['Status']){
-					case 'ok':
-						$_ret_detail=$_ret_detail . 'Volume ' . $vol['VolumeId'] . ' OK; ';
-						break;
-					case 'impaired':
-						$_ret_flag_crit=TRUE;
-						$_ret_detail=$_ret_detail . "Impaired VOLUME (I/O DISABLED)" . $vol['VolumeId'] . '; ';
-						break;
-					case 'warning':
-						$_ret_flag_warn=TRUE;
-						$_ret_detail=$_ret_detail . 'Volume ' . $vol['VolumeId'] . ' warning; ';
-						break;
-					case 'insufficient-data':
-						$_ret_flag_unkn=TRUE;
-						$_ret_detail=$_ret_detail . 'Volume ' . $vol['VolumeId'] . ' unknown; ';
-						break;
+			foreach($input->getOption('ignore') as $_ignored_vol){
+				if (preg_match('/' . $_ignored_vol . '/', $vol['VolumeId'])){
+					# we match get out of the loop
+					break;
+				} else {
+					$result = $client->describeVolumeStatus(array('VolumeIds' => array($vol['VolumeId'])));
+					$_volstat = $result['VolumeStatuses'];
+					foreach($_volstat as $vstat){
+						switch ($vstat['VolumeStatus']['Status']){
+							case 'ok':
+								$_ret_detail=$_ret_detail . 'Volume ' . $vol['VolumeId'] . ' OK; ';
+								break;
+							case 'impaired':
+								$_ret_flag_crit=TRUE;
+								$_ret_detail=$_ret_detail . "Impaired VOLUME (I/O DISABLED)" . $vol['VolumeId'] . '; ';
+								break;
+							case 'warning':
+								$_ret_flag_warn=TRUE;
+								$_ret_detail=$_ret_detail . 'Volume ' . $vol['VolumeId'] . ' warning; ';
+								break;
+							case 'insufficient-data':
+								$_ret_flag_unkn=TRUE;
+								$_ret_detail=$_ret_detail . 'Volume ' . $vol['VolumeId'] . ' unknown; ';
+								break;
+						}
+					}
 				}
+				# get out of the loop
+				break;
 			}
 		}
 		if ($_ret_flag_unkn) { $_ret_detail='UNKNOWN: ' . $_ret_detail ; $_ret_state=STATE_UNKNOWN; }
@@ -107,6 +117,7 @@ class CheckEBSSnapshots extends Console\Command\Command {
 		$this->addOption('warning', 'w', InputOption::VALUE_REQUIRED, 'Warning level', 14);
 		$this->addOption('critical', 'c', InputOption::VALUE_REQUIRED, 'Critical level', 7);
 		$this->addOption('period', 'p', InputOption::VALUE_REQUIRED, 'How many days back to check the snapshots', 14);
+		$this->addOption('ignore', 'i', InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED, 'Ignore this volume', null);
 	}
 
 	protected function execute(Console\Input\InputInterface $input, Console\Output\OutputInterface $output){
@@ -140,43 +151,52 @@ class CheckEBSSnapshots extends Console\Command\Command {
 		# Now iterate over the volumes checking status
 		$_volumes = $result['Volumes'];
 		foreach($_volumes as $vol){
-
-			unset($dates);
-			# create an array to filter snapshots
-			for ($i=0 ; $i <= $input->getOption('period') ; $i++){
-				$dates[]=date('Y-m-d', strtotime("-$i days")) . '*';
-			}
-
-			$result = $client->describeSnapshots(
-				array('Filters' => array(
-					array('Name' => 'volume-id', 'Values' => array($vol['VolumeId'])),
-					array('Name' => 'start-time', 'Values' => $dates),
-				))
-			);
-			$_snapshots = $result['Snapshots'];
-			if (count($_snapshots) < $input->getOption('critical')){
-				$_ret_flag_crit=TRUE;
-				$_ret_detail=$_ret_detail . 'Volume ' . $vol['VolumeId'] . ' has less than ' . $input->getOption('critical') . ' snapshots; ';
-				continue;
-			}
-			if (count($_snapshots) < $input->getOption('warning')){
-				$_ret_flag_warn=TRUE;
-				$_ret_detail=$_ret_detail . 'Volume ' . $vol['VolumeId'] . ' has less than ' . $input->getOption('warning') . ' snapshots; ';
-				continue;
-			}
-
-			foreach($_snapshots as $snapshot){
-				switch($snapshot['State']){
-					case 'completed':
-						$_ret_detail = $_ret_detail . $snapshot['SnapshotId'] . ' OK; ';
-						break;
-					case 'pending':
-						$_ret_detail = $_ret_detail . $snapshot['SnapshotId'] . ' In Progress; ';
-						break;
-					case 'error':
+			foreach($input->getOption('ignore') as $_ignored_vol){
+				if (preg_match('/' . $_ignored_vol . '/', $vol['VolumeId'])){
+					# matches ignored volume ...
+					# get out of the loop
+					break;
+				} else {
+					unset($dates);
+					# create an array to filter snapshots
+					for ($i=0 ; $i <= $input->getOption('period') ; $i++){
+						$dates[]=date('Y-m-d', strtotime("-$i days")) . '*';
+					}
+		
+					$result = $client->describeSnapshots(
+						array('Filters' => array(
+							array('Name' => 'volume-id', 'Values' => array($vol['VolumeId'])),
+							array('Name' => 'start-time', 'Values' => $dates),
+						))
+					);
+					$_snapshots = $result['Snapshots'];
+					if (count($_snapshots) < $input->getOption('critical')){
 						$_ret_flag_crit=TRUE;
-						$_ret_detail = $_ret_detail . $snapshot['SnapshotId'] . ' FAILED; ';
-						break;
+						$_ret_detail=$_ret_detail . 'Volume ' . $vol['VolumeId'] . ' has less than ' . $input->getOption('critical') . ' snapshots; ';
+						continue;
+					}
+					if (count($_snapshots) < $input->getOption('warning')){
+						$_ret_flag_warn=TRUE;
+						$_ret_detail=$_ret_detail . 'Volume ' . $vol['VolumeId'] . ' has less than ' . $input->getOption('warning') . ' snapshots; ';
+						continue;
+					}
+		
+					foreach($_snapshots as $snapshot){
+						switch($snapshot['State']){
+						case 'completed':
+							$_ret_detail = $_ret_detail . $snapshot['SnapshotId'] . ' OK; ';
+							break;
+						case 'pending':
+							$_ret_detail = $_ret_detail . $snapshot['SnapshotId'] . ' In Progress; ';
+							break;
+						case 'error':
+							$_ret_flag_crit=TRUE;
+							$_ret_detail = $_ret_detail . $snapshot['SnapshotId'] . ' FAILED; ';
+							break;
+						}
+					}
+					# get out of the loop
+					break;
 				}
 			}
 		}
