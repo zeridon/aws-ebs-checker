@@ -10,6 +10,7 @@ There are 2 internal applications supported:
 
  * check-ebs - checks status for all attached EBS volumes.
  * check-snapshots - checks that the attached EBS volumes have at least a certain number of snapshots in the last 15 days (configurable via `--period|-p` option) and that those snapshots are healthy. Warning and critical levels are configurable via the `--warning|-w` and `--critical|-c` options respectively. Due to the usage of `symfony/console` the options are completely optional, but have fallback values of `14` and `7` respectively.
+ * It is possible to ignore certain volumes by ID using the option `--ignore|-i`
 
 Help is available via the --help option.
 
