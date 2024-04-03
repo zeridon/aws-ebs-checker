@@ -1,6 +1,6 @@
 {
     "require": {
         "aws/aws-sdk-php": "3.*",
-	"symfony/console": "7.0.4"
+	"symfony/console": "7.0.6"
     }
 }
